@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AWS Architecture Mapper — Official AWS Icon Topology Builder</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- Top AWS Studio Bar -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img id="brandCloudIcon" class="brand-logo" alt="AWS Cloud" src="" />
+      <div class="brand-titles">
+        <h1>AWS Architecture Mapper</h1>
+        <span class="brand-sub">100% Official AWS Architecture Icons</span>
+      </div>
+      <div id="envBadge" class="env-badge sample">Sample Topology</div>
+    </div>
+
+    <div class="topbar-search">
+      <input
+        id="searchInput"
+        type="search"
+        placeholder="Filter resources, services, ARNs, tags... (Press /)"
+        autocomplete="off"
+      />
+      <span id="visibleCountPill" class="search-count">0 nodes</span>
+    </div>
+
+    <div class="topbar-actions">
+      <button id="focusScanBtn" class="btn btn-aws">Scan AWS Environment</button>
+      <button id="exportSvgBtn" class="btn btn-outline-light" title="Download standalone vector SVG with embedded official AWS icons">
+        Export SVG
+      </button>
+      <button id="exportPngBtn" class="btn btn-light" title="Download high-resolution 2x Retina PNG diagram">
+        Export PNG (HD)
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <div class="workspace">
+    <!-- Left Sidebar -->
+    <aside id="leftSidebar" class="sidebar">
+      <div class="sidebar-tabs">
+        <button class="tab-btn active" data-tab="scanTab">AWS Scanner</button>
+        <button class="tab-btn" data-tab="filterTab">Filters &amp; Layers</button>
+        <button class="tab-btn" data-tab="snapshotsTab">Snapshots</button>
+      </div>
+
+      <!-- TAB 1: AWS Connection & Multi-Region Scanner -->
+      <div id="scanTab" class="tab-pane active">
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>AWS Credentials Profile</h2>
+            <button id="refreshProfilesBtn" class="link-btn" title="Reload ~/.aws profiles">Refresh</button>
+          </div>
+          <label class="field-label" for="profileSelect">Local Profile (~/.aws / SSO / Env)</label>
+          <select id="profileSelect" class="select-input"></select>
+          <p class="field-hint">
+            Uses read-only AWS SDK calls via your local <code>~/.aws</code> config, SSO session, or shell environment.
+          </p>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Region Scope</h2>
+          </div>
+          <div class="radio-group">
+            <label class="radio-row">
+              <input type="radio" name="regionMode" value="all" checked />
+              <span>All Enabled Regions (Full Account Sweep)</span>
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="regionMode" value="selected" />
+              <span>Select Specific Regions</span>
+            </label>
+          </div>
+
+          <div id="regionPickerWrap" class="region-picker hidden">
+            <div class="region-quick-btns">
+              <button type="button" class="chip-action" data-preset="us">US</button>
+              <button type="button" class="chip-action" data-preset="eu">EU</button>
+              <button type="button" class="chip-action" data-preset="ap">APAC</button>
+              <button type="button" class="chip-action" data-preset="all">All</button>
+              <button type="button" class="chip-action" data-preset="none">Clear</button>
+            </div>
+            <div id="regionChips" class="region-chips"></div>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2>Discovery Depth</h2>
+          <label class="check-row">
+            <input id="chkGlobal" type="checkbox" checked />
+            <span>Global Edge &amp; S3 (Route 53, CloudFront, WAF, S3)</span>
+          </label>
+          <label class="check-row">
+            <input id="chkTagSweep" type="checkbox" checked />
+            <span>Universal Tagging Sweep (All 200+ AWS Services)</span>
+          </label>
+
+          <button id="startScanBtn" class="btn btn-aws btn-block mt-12">
+            Start Live AWS Scan
+          </button>
+          <button id="loadSampleBtn" class="btn btn-secondary btn-block mt-8">
+            Load Sample Multi-Region AWS Demo
+          </button>
+
+          <!-- Live Scan Progress -->
+          <div id="scanProgressBox" class="scan-progress hidden">
+            <div class="progress-top">
+              <span id="scanStatusLabel">Scanning...</span>
+              <span id="scanPctLabel">0%</span>
+            </div>
+            <div class="progress-bar-track">
+              <div id="scanProgressBar" class="progress-bar-fill"></div>
+            </div>
+            <p id="scanStepMsg" class="progress-msg"></p>
+          </div>
+
+          <div id="scanErrorBox" class="alert-box error hidden"></div>
+          <div id="scanWarningsBox" class="alert-box warn hidden"></div>
+        </section>
+
+        <section class="panel-section subtle-help">
+          <details>
+            <summary>AWS SSO &amp; IAM Read-Only Tips</summary>
+            <div class="help-body">
+              <p>If using AWS IAM Identity Center (SSO), authenticate first:</p>
+              <pre>aws sso login --profile your-profile</pre>
+              <p>Recommended AWS managed read-only policy: <code>ReadOnlyAccess</code> or <code>ViewOnlyAccess</code>.</p>
+            </div>
+          </details>
+        </section>
+      </div>
+
+      <!-- TAB 2: Diagram Filters & Layers -->
+      <div id="filterTab" class="tab-pane">
+        <section class="panel-section">
+          <h2>Container &amp; Edge Display</h2>
+          <label class="check-row">
+            <input id="chkHideDefaultVpcs" type="checkbox" checked />
+            <span>Hide Empty Default VPCs</span>
+          </label>
+          <label class="check-row">
+            <input id="chkHideEmptySubnets" type="checkbox" />
+            <span>Hide Empty Subnets</span>
+          </label>
+          <label class="check-row">
+            <input id="chkShowEdges" type="checkbox" checked />
+            <span>Show Architecture Connections</span>
+          </label>
+          <label class="check-row">
+            <input id="chkShowEdgeLabels" type="checkbox" checked />
+            <span>Show Protocol / Route Labels</span>
+          </label>
+        </section>
+
+        <section class="panel-section">
+          <h2>Connection Types</h2>
+          <div id="edgeKindFilters" class="edge-legend-list"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Regions in Diagram</h2>
+            <button id="resetRegionsFilterBtn" class="link-btn">All</button>
+          </div>
+          <div id="diagramRegionPills" class="pill-wrap"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Official AWS Service Categories</h2>
+            <button id="resetCategoriesBtn" class="link-btn">All</button>
+          </div>
+          <div id="categoryFilterList" class="category-list"></div>
+        </section>
+      </div>
+
+      <!-- TAB 3: Saved Snapshots & JSON Import/Export -->
+      <div id="snapshotsTab" class="tab-pane">
+        <section class="panel-section">
+          <h2>Topology Snapshots</h2>
+          <p class="field-hint">
+            Every live AWS scan is saved locally so you can reload, filter, and export diagrams offline anytime.
+          </p>
+          <button id="downloadJsonBtn" class="btn btn-secondary btn-block mt-8">
+            Export Current Topology (.json)
+          </button>
+          <label class="btn btn-secondary btn-block mt-8 file-btn-label">
+            Import Topology (.json)
+            <input id="importJsonInput" type="file" accept=".json" hidden />
+          </label>
+        </section>
+
+        <section class="panel-section">
+          <h2>Saved Scans</h2>
+          <div id="snapshotList" class="snapshot-list"></div>
+        </section>
+      </div>
+    </aside>
+
+    <!-- Center Interactive Architecture Viewport -->
+    <main class="canvas-stage" id="canvasStage">
+      <!-- Sample Mode Info Banner -->
+      <div id="sampleBanner" class="sample-banner">
+        <span>Previewing realistic multi-region sample AWS architecture. Select your profile on the left and click <strong>Start Live AWS Scan</strong> to map your account.</span>
+        <button id="dismissBannerBtn" class="banner-close" title="Dismiss">&times;</button>
+      </div>
+
+      <!-- Summary KPI Strip -->
+      <div class="kpi-strip" id="kpiStrip">
+        <div class="kpi-pill"><strong id="kpiAccount">-</strong><span>Account</span></div>
+        <div class="kpi-pill"><strong id="kpiRegions">0</strong><span>Regions</span></div>
+        <div class="kpi-pill"><strong id="kpiVpcs">0</strong><span>VPCs</span></div>
+        <div class="kpi-pill"><strong id="kpiSubnets">0</strong><span>Subnets</span></div>
+        <div class="kpi-pill"><strong id="kpiResources">0</strong><span>Resources</span></div>
+        <div class="kpi-pill"><strong id="kpiEdges">0</strong><span>Connections</span></div>
+      </div>
+
+      <!-- Main Pan/Zoom SVG Viewport -->
+      <svg id="viewportSvg" class="viewport-svg" xmlns="http://www.w3.org/2000/svg">
+        <defs id="svgDefs"></defs>
+        <g id="cameraGroup">
+          <g id="boxesLayer"></g>
+          <g id="edgesLayer"></g>
+          <g id="nodesLayer"></g>
+          <g id="edgeLabelsLayer"></g>
+        </g>
+      </svg>
+
+      <!-- Bottom-Left Minimap -->
+      <div class="minimap-card" id="minimapCard">
+        <div class="minimap-title">Navigator</div>
+        <svg id="minimapSvg" class="minimap-svg" viewBox="0 0 200 140">
+          <g id="minimapContent"></g>
+          <rect id="minimapViewport" x="0" y="0" width="50" height="50" fill="rgba(255,153,0,0.16)" stroke="#FF9900" stroke-width="2" rx="2" />
+        </svg>
+      </div>
+
+      <!-- Bottom-Center Zoom & Layout Controls -->
+      <div class="hud-toolbar">
+        <button id="zoomOutBtn" class="hud-btn" title="Zoom Out (-)">&minus;</button>
+        <span id="zoomPct" class="hud-zoom-label">100%</span>
+        <button id="zoomInBtn" class="hud-btn" title="Zoom In (+)">+</button>
+        <span class="hud-sep"></span>
+        <button id="fitViewBtn" class="hud-btn" title="Fit Entire Architecture (F)">Fit View</button>
+        <button id="resetLayoutBtn" class="hud-btn" title="Snap dragged nodes back to clean auto-layout">Reset Layout</button>
+      </div>
+
+      <!-- Official AWS Icons Compliance Badge -->
+      <div class="official-badge">
+        <img id="badgeAwsLogo" alt="" src="" />
+        <span>Official AWS Architecture Icons</span>
+      </div>
+    </main>
+
+    <!-- Right Resource / Container Inspector Drawer -->
+    <aside id="inspectorDrawer" class="inspector hidden">
+      <div class="inspector-header">
+        <div class="inspector-title-row">
+          <img id="inspIcon" class="insp-icon" alt="" src="" />
+          <div class="insp-headings">
+            <span id="inspTypeBadge" class="insp-badge">aws:resource</span>
+            <h3 id="inspName">Resource Name</h3>
+          </div>
+        </div>
+        <button id="closeInspectorBtn" class="close-btn" title="Close (Esc)">&times;</button>
+      </div>
+
+      <div class="inspector-body" id="inspectorBody"></div>
+    </aside>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
